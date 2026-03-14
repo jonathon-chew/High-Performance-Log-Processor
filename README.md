@@ -20,6 +20,25 @@ This project is meant to teach:
 - Filter or transform records through configurable stages.
 - Produce summary statistics or transformed output.
 
+## Scope Boundaries
+
+The initial goal for this project is to process logs after they have already been written rather than to build a live log collection system.
+
+That means the first version should focus on:
+
+- reading from existing log files,
+- parsing lines into structured records,
+- filtering, transforming, and aggregating records efficiently,
+- producing summaries or transformed output.
+
+Possible later expansions:
+
+1. Support `stdin` so the processor can be used in shell pipelines.
+2. Support long-running input sources such as `tail -f`.
+3. Explore optional network ingestion only after the file and stdin pipeline is solid.
+
+This keeps the learning focus on throughput, parsing, batching, buffering, and pipeline design instead of operational concerns like transport protocols, delivery guarantees, or full log shipping infrastructure.
+
 ## Architecture Sketch
 
 - A reader stage ingests raw log lines.
@@ -33,6 +52,8 @@ This project is meant to teach:
 2. Add a multi-stage concurrent processing pipeline.
 3. Add aggregation and performance benchmarks.
 4. Tune allocations, batching, and throughput under load.
+5. Add `stdin` support for pipeline-style usage.
+6. Evaluate whether network ingestion is still worthwhile after the file and stdin workflow feels complete.
 
 ## Current Status
 
