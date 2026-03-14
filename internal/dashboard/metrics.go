@@ -414,5 +414,31 @@ func ErrorRateByPath(records []LogRecord) []PathMetrics {
 // error rates can be calculated over time.
 // This is useful for identifying windows with elevated 4xx or 5xx traffic.
 func ErrorRateByWindow(records []LogRecord, bucketSize BucketSize) []StatusClassVolumePoint {
-	panic("not implemented")
+	// panic("not implemented")
+
+	var returnStatusClassVolumePoint []StatusClassVolumePoint
+
+	if len(records) == 0 {
+		return returnStatusClassVolumePoint
+	}
+
+	for _, bucket := range groupRecordsByWindow(records, bucketSize) {
+		data := aggregatePathMetrics(bucket.Records)
+		var tempStatusClassCounts StatusClassCounts
+
+		for _, record := range data {
+			tempStatusClassCounts.Status1xx += record.StatusCounts.Status1xx
+			tempStatusClassCounts.Status2xx += record.StatusCounts.Status2xx
+			tempStatusClassCounts.Status3xx += record.StatusCounts.Status3xx
+			tempStatusClassCounts.Status4xx += record.StatusCounts.Status4xx
+			tempStatusClassCounts.Status5xx += record.StatusCounts.Status5xx
+		}
+
+		returnStatusClassVolumePoint = append(returnStatusClassVolumePoint, StatusClassVolumePoint{
+			Window: bucket.Window,
+			Counts: tempStatusClassCounts,
+		})
+	}
+
+	return returnStatusClassVolumePoint
 }
