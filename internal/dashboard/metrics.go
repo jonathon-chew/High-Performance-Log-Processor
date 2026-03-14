@@ -1,6 +1,8 @@
 package dashboard
 
 import (
+	"slices"
+	"strings"
 	"time"
 )
 
@@ -153,7 +155,13 @@ func StatusCodesByWindow(records []LogRecord, bucketSize BucketSize) []StatusCod
 // It is expected to delegate its core aggregation work to aggregatePathMetrics.
 func MetricsByPath(records []LogRecord) []PathMetrics {
 	// panic("not implemented")
-	return aggregatePathMetrics(records)
+	returnMetrics := aggregatePathMetrics(records)
+
+	slices.SortFunc(returnMetrics, func(a, b PathMetrics) int {
+		return strings.Compare(a.Path, b.Path)
+	})
+
+	return returnMetrics
 }
 
 // aggregatePathMetrics should contain the shared "group by path and aggregate"
@@ -280,11 +288,73 @@ func aggregatePathMetrics(records []LogRecord) []PathMetrics {
 	return metrics
 }
 
+// groupRecordsByWindow should contain the shared "split records into contiguous
+// time buckets" behavior used by windowed metric functions.
+// It should return one PathWindowMetrics value per bucket, with each bucket
+// containing the records that fall within that bucket's time range.
+func groupRecordsByWindow(records []LogRecord, bucketSize BucketSize) []PathWindowMetrics {
+	panic("not implemented")
+}
+
 // MetricsByPathAndWindow should return per-path metrics inside each time bucket.
 // This is the most dashboard-friendly aggregation because it combines:
 // time window + path + request count + level totals + status totals + latency.
 func MetricsByPathAndWindow(records []LogRecord, bucketSize BucketSize) []PathWindowMetrics {
-	panic("not implemented")
+	// panic("not implemented")
+
+	if len(records) == 0 {
+		return []PathWindowMetrics{}
+	}
+
+	slices.SortFunc(records, func(a, b LogRecord) int {
+		if a.TS.Unix() > b.TS.Unix() {
+			return 1
+		} else if a.TS.Unix() < b.TS.Unix() {
+			return -1
+		} else {
+			return 0
+		}
+	})
+
+	endTime := records[0].TS.Add(time.Duration(bucketSize))
+	var returnPathWindowMetrics []PathWindowMetrics
+	var tempLogRecords []LogRecord
+
+	// Loop through log records
+	for _, record := range records {
+
+		if len(tempLogRecords) == 0 {
+			tempLogRecords = append(tempLogRecords, record)
+		} else if record.TS.Unix() <= endTime.Unix() {
+			tempLogRecords = append(tempLogRecords, record)
+		} else {
+
+			if len(tempLogRecords) > 0 {
+				returnPathWindowMetrics = append(returnPathWindowMetrics, PathWindowMetrics{
+					Window: TimeWindow{
+						Start: tempLogRecords[0].TS,
+						End:   tempLogRecords[len(tempLogRecords)-1].TS,
+					},
+					Paths: aggregatePathMetrics(tempLogRecords),
+				})
+			}
+
+			endTime = record.TS.Add(time.Duration(bucketSize))
+			tempLogRecords = []LogRecord{record}
+		}
+	}
+
+	if len(tempLogRecords) > 0 {
+		returnPathWindowMetrics = append(returnPathWindowMetrics, PathWindowMetrics{
+			Window: TimeWindow{
+				Start: tempLogRecords[0].TS,
+				End:   tempLogRecords[len(tempLogRecords)-1].TS,
+			},
+			Paths: aggregatePathMetrics(tempLogRecords),
+		})
+	}
+
+	return returnPathWindowMetrics
 }
 
 // LatencyByPath should return latency summaries for each path across the full input set.
