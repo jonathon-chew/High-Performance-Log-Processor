@@ -153,13 +153,53 @@ func aggregatePathMetrics(records []LogRecord) []PathMetrics {
 // "Which API paths are slow on average?"
 // "Which API path had the highest max latency?"
 func LatencyByPath(records []LogRecord) []PathLatencyMetrics {
-	panic("not implemented")
+	// panic("not implemented")
+
+	var returnPathLatencyMetrics []PathLatencyMetrics
+
+	data := aggregatePathMetrics(records)
+
+	for _, record := range data {
+		returnPathLatencyMetrics = append(returnPathLatencyMetrics, PathLatencyMetrics{
+			Path:    record.Path,
+			Latency: record.Latency,
+		})
+	}
+
+	slices.SortFunc(returnPathLatencyMetrics, func(a, b PathLatencyMetrics) int {
+		return strings.Compare(a.Path, b.Path)
+	})
+
+	return returnPathLatencyMetrics
 }
 
 // SlowRequestsByPath should return per-path counts of requests that exceed configured
 // thresholds such as 100ms, 250ms, and 500ms.
 func SlowRequestsByPath(records []LogRecord) []PathLatencyMetrics {
-	panic("not implemented")
+	// panic("not implemented")
+
+	var returnPathLatencyMetrics []PathLatencyMetrics
+
+	if len(records) == 0 {
+		return []PathLatencyMetrics{}
+	}
+
+	data := aggregatePathMetrics(records)
+
+	for _, eachPath := range data {
+		if eachPath.Latency.SlowOver100MS > 0 || eachPath.Latency.SlowOver250MS > 0 || eachPath.Latency.SlowOver500MS > 0 {
+			returnPathLatencyMetrics = append(returnPathLatencyMetrics, PathLatencyMetrics{
+				Path:    eachPath.Path,
+				Latency: eachPath.Latency,
+			})
+		}
+	}
+
+	slices.SortFunc(returnPathLatencyMetrics, func(a, b PathLatencyMetrics) int {
+		return strings.Compare(a.Path, b.Path)
+	})
+
+	return returnPathLatencyMetrics
 }
 
 // ErrorRateByPath should return per-path request totals alongside status-class counts
@@ -174,6 +214,10 @@ func ErrorRateByPath(records []LogRecord) []PathMetrics {
 	}
 
 	data := aggregatePathMetrics(records)
+
+	slices.SortFunc(data, func(a, b PathMetrics) int {
+		return strings.Compare(a.Path, b.Path)
+	})
 
 	return data
 }
