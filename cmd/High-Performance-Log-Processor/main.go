@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -27,6 +28,24 @@ type LogLine struct {
 
 type Logs struct {
 	AllLogs []LogLine
+
+	Levels   []string
+	Methods  []string
+	Paths    []string
+	Statuses []string
+	IPs      []string
+}
+
+func GetValue(field string) string {
+	splitLine := strings.Split(field, "=")
+	// key := splitLine[0]
+	value := splitLine[1]
+
+	if value[0] == '"' && value[len(value)-1] == '"' {
+		value = value[1 : len(value)-2]
+	}
+
+	return value
 }
 
 func main() {
@@ -45,6 +64,7 @@ func main() {
 	filePointer, err := os.Open(Flags.FileName)
 	if err != nil {
 		log.Print("[ERROR]: Unable to open file ", err)
+		return
 	}
 
 	defer filePointer.Close()
@@ -53,19 +73,16 @@ func main() {
 
 	for bufReader.Scan() {
 		line := bufReader.Text()
-		// fmt.Print(line, "*\n*")
 
 		var splitLog []string
 		var insideQuote bool
 		var start int
-		// fmt.Print("Split Log Length: ", len(splitLog), "\n")
 		for curByte := range line {
 			if line[curByte] == '"' {
 				if insideQuote {
 					insideQuote = false
 				} else {
 					insideQuote = true
-					log.Print("flip")
 				}
 			}
 
@@ -78,24 +95,45 @@ func main() {
 		// add the final message!
 		splitLog = append(splitLog, line[start:])
 
-		fmt.Print("Split log length: ", len(splitLog), "\n")
-		for i := range splitLog {
-			fmt.Print(i, " ", splitLog[i], "\n")
+		if len(splitLog) != 11 {
+			log.Panic("The line can not be parsed correctly")
 		}
 
-		Logs.AllLogs = append(Logs.AllLogs, LogLine{
-			TS:        strings.Split(splitLog[0], "=")[1],
-			Level:     strings.Split(splitLog[1], "=")[1],
-			RequestId: strings.Split(splitLog[2], "=")[1],
-			Method:    strings.Split(splitLog[3], "=")[1],
-			Path:      strings.Split(splitLog[4], "=")[1],
-			Status:    strings.Split(splitLog[5], "=")[1],
-			Duration:  strings.Split(splitLog[6], "=")[1],
-			Bytes:     strings.Split(splitLog[7], "=")[1],
-			Ip:        strings.Split(splitLog[8], "=")[1],
-			UserAgent: strings.Split(splitLog[9], "=")[1],
-			Message:   strings.Split(splitLog[10], "=")[1],
-		})
+		var logLine = LogLine{
+			TS:        GetValue(splitLog[0]),
+			Level:     GetValue(splitLog[1]),
+			RequestId: GetValue(splitLog[2]),
+			Method:    GetValue(splitLog[3]),
+			Path:      GetValue(splitLog[4]),
+			Status:    GetValue(splitLog[5]),
+			Duration:  GetValue(splitLog[6]),
+			Bytes:     GetValue(splitLog[7]),
+			Ip:        GetValue(splitLog[8]),
+			// Hint: quoted fields like ua and msg still include their surrounding
+			// quotes at this stage. Trimming those is a separate parsing step.
+			UserAgent: GetValue(splitLog[9]),
+			Message:   GetValue(splitLog[10]),
+		}
+
+		Logs.AllLogs = append(Logs.AllLogs, logLine)
+
+		if !slices.Contains(Logs.Levels, logLine.Level) {
+			Logs.Levels = append(Logs.Levels, logLine.Level)
+		}
+		if !slices.Contains(Logs.Methods, logLine.Method) {
+			Logs.Methods = append(Logs.Methods, logLine.Method)
+		}
+		if !slices.Contains(Logs.Paths, logLine.Path) {
+			Logs.Paths = append(Logs.Paths, logLine.Path)
+		}
+		if !slices.Contains(Logs.Statuses, logLine.Status) {
+			Logs.Statuses = append(Logs.Statuses, logLine.Status)
+		}
+	}
+
+	if bufReader.Err() != nil {
+		log.Panic(bufReader.Err())
+		return
 	}
 
 	var warnings int
@@ -105,5 +143,11 @@ func main() {
 			warnings += 1
 		}
 	}
-	fmt.Print("There were: ", len(Logs.AllLogs), " logs. ", strconv.Itoa(warnings), " were warnings")
+	fmt.Print("There were: ", len(Logs.AllLogs), " logs. ", strconv.Itoa(warnings), " were warnings\n")
+	fmt.Print(
+		"There were: ", len(Logs.Methods), " Methods. ", Logs.Methods, "\n",
+		"There were: ", len(Logs.Levels), " Levels. ", Logs.Levels, "\n",
+		"There were: ", len(Logs.Paths), " Paths. ", Logs.Paths, "\n",
+		"There were: ", len(Logs.Statuses), " Statuses. ", Logs.Statuses, "\n",
+	)
 }
