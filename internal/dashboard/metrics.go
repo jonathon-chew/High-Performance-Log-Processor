@@ -103,6 +103,14 @@ type PathWindowMetrics struct {
 	Paths  []PathMetrics
 }
 
+// WindowBucket represents one time bucket plus the raw records that belong to it.
+// Windowed metric functions can reuse this type and then decide for themselves
+// how to aggregate the records inside each bucket.
+type WindowBucket struct {
+	Window  TimeWindow
+	Records []LogRecord
+}
+
 // PathLatencyMetrics represents latency-only summaries for a specific path.
 type PathLatencyMetrics struct {
 	Path    string
@@ -290,20 +298,14 @@ func aggregatePathMetrics(records []LogRecord) []PathMetrics {
 
 // groupRecordsByWindow should contain the shared "split records into contiguous
 // time buckets" behavior used by windowed metric functions.
-// It should return one PathWindowMetrics value per bucket, with each bucket
-// containing the records that fall within that bucket's time range.
-func groupRecordsByWindow(records []LogRecord, bucketSize BucketSize) []PathWindowMetrics {
-	panic("not implemented")
-}
-
-// MetricsByPathAndWindow should return per-path metrics inside each time bucket.
-// This is the most dashboard-friendly aggregation because it combines:
-// time window + path + request count + level totals + status totals + latency.
-func MetricsByPathAndWindow(records []LogRecord, bucketSize BucketSize) []PathWindowMetrics {
+// It should return one WindowBucket per bucket, with each bucket containing
+// the raw records that fall within that bucket's time range.
+// Specific metric functions can then transform those buckets into request counts,
+// level totals, status summaries, or path-based aggregates.
+func groupRecordsByWindow(records []LogRecord, bucketSize BucketSize) []WindowBucket {
 	// panic("not implemented")
-
 	if len(records) == 0 {
-		return []PathWindowMetrics{}
+		return []WindowBucket{}
 	}
 
 	slices.SortFunc(records, func(a, b LogRecord) int {
@@ -317,7 +319,7 @@ func MetricsByPathAndWindow(records []LogRecord, bucketSize BucketSize) []PathWi
 	})
 
 	endTime := records[0].TS.Add(time.Duration(bucketSize))
-	var returnPathWindowMetrics []PathWindowMetrics
+	var returnWindowBucket []WindowBucket
 	var tempLogRecords []LogRecord
 
 	// Loop through log records
@@ -330,12 +332,12 @@ func MetricsByPathAndWindow(records []LogRecord, bucketSize BucketSize) []PathWi
 		} else {
 
 			if len(tempLogRecords) > 0 {
-				returnPathWindowMetrics = append(returnPathWindowMetrics, PathWindowMetrics{
+				returnWindowBucket = append(returnWindowBucket, WindowBucket{
 					Window: TimeWindow{
 						Start: tempLogRecords[0].TS,
 						End:   tempLogRecords[len(tempLogRecords)-1].TS,
 					},
-					Paths: aggregatePathMetrics(tempLogRecords),
+					Records: tempLogRecords,
 				})
 			}
 
@@ -345,12 +347,33 @@ func MetricsByPathAndWindow(records []LogRecord, bucketSize BucketSize) []PathWi
 	}
 
 	if len(tempLogRecords) > 0 {
-		returnPathWindowMetrics = append(returnPathWindowMetrics, PathWindowMetrics{
+		returnWindowBucket = append(returnWindowBucket, WindowBucket{
 			Window: TimeWindow{
 				Start: tempLogRecords[0].TS,
 				End:   tempLogRecords[len(tempLogRecords)-1].TS,
 			},
-			Paths: aggregatePathMetrics(tempLogRecords),
+			Records: tempLogRecords,
+		})
+	}
+
+	return returnWindowBucket
+}
+
+// MetricsByPathAndWindow should return per-path metrics inside each time bucket.
+// This is the most dashboard-friendly aggregation because it combines:
+// time window + path + request count + level totals + status totals + latency.
+func MetricsByPathAndWindow(records []LogRecord, bucketSize BucketSize) []PathWindowMetrics {
+	// panic("not implemented")
+
+	if len(records) == 0 {
+		return []PathWindowMetrics{}
+	}
+	var returnPathWindowMetrics []PathWindowMetrics
+
+	for _, bucket := range groupRecordsByWindow(records, bucketSize) {
+		returnPathWindowMetrics = append(returnPathWindowMetrics, PathWindowMetrics{
+			Window: bucket.Window,
+			Paths:  aggregatePathMetrics(bucket.Records),
 		})
 	}
 
