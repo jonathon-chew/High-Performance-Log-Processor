@@ -149,7 +149,17 @@ func StatusCodesByWindow(records []LogRecord, bucketSize BucketSize) []StatusCod
 // "How many requests hit /api/orders?"
 // "How many WARN/ERROR logs came from /api/login?"
 // "What was the average/max latency for /api/reports/daily?"
+//
+// It is expected to delegate its core aggregation work to aggregatePathMetrics.
 func MetricsByPath(records []LogRecord) []PathMetrics {
+	// panic("not implemented")
+	return aggregatePathMetrics(records)
+}
+
+// aggregatePathMetrics should contain the shared "group by path and aggregate"
+// behavior used by both MetricsByPath and MetricsByPathAndWindow.
+// It should return one PathMetrics value per distinct path in the provided records.
+func aggregatePathMetrics(records []LogRecord) []PathMetrics {
 	// panic("not implemented")
 
 	var metrics []PathMetrics
@@ -258,10 +268,8 @@ func MetricsByPath(records []LogRecord) []PathMetrics {
 			case record.Status < 600:
 				currentData.StatusCounts.Status5xx += 1
 			}
-
 			seenPaths[record.Path] = currentData
 		}
-
 	}
 
 	for _, value := range seenPaths {
