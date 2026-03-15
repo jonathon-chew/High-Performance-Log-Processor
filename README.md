@@ -57,22 +57,38 @@ This keeps the learning focus on throughput, parsing, batching, buffering, and p
 
 ## Current Status
 
-This project is currently scaffolded but not implemented. The module exists, but the ingestion and processing pipeline are still only planned.
+This project is no longer just scaffolded.
+
+Current progress includes:
+
+- a tokenizer for the initial `key=value` log format with quoted values,
+- parsing into `dashboard.LogRecord`,
+- realistic sample fixtures in `testdata/`,
+- shared path aggregation helpers,
+- shared window bucketing helpers,
+- implemented path and window metric functions for selected reports,
+- JSON-ready dashboard structs,
+- a focused automated test suite for the implemented behavior.
+
+The project is still in active development. Some metric/report functions remain unimplemented, malformed-input handling is still being refined, and the CLI/output surface is still minimal.
 
 ## Development Notes
 
-Planned commands once implementation begins:
+Current useful commands:
 
 - `go run ./cmd/High-Performance-Log-Processor`
 - `go build ./cmd/High-Performance-Log-Processor`
 - `go test ./...`
 
+Additional design notes live in `doc/design.md`.
+
 ## Project Structure
 
 ```text
-cmd/High-Performance-Log-Processor/    future processor entrypoint
-internal/                              pipeline and parsing internals
+cmd/High-Performance-Log-Processor/    processor entrypoint and parser helpers
+internal/                              dashboard, aggregation, and CLI internals
 pkg/                                   optional reusable processing components
-doc/                                   throughput notes and benchmark ideas
+doc/                                   design notes and benchmark ideas
 scripts/                               helper scripts
+testdata/                              sample log fixtures
 ```

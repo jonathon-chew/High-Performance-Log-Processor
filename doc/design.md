@@ -67,6 +67,19 @@ The intended parsing flow is:
 
 This separation keeps the tokenizer small and makes later format changes easier to manage.
 
+### Current Parser Resilience
+
+The parser is currently best-effort rather than strict.
+
+Current behavior:
+
+- missing fields may resolve to empty strings,
+- invalid integers currently fall back to `0`,
+- invalid timestamps are currently logged to stderr,
+- records with invalid timestamps are still appended with the zero-value `time.Time`.
+
+This behavior is intentional for now so log processing can continue while malformed-line policy is still being designed.
+
 ### Time Parsing
 
 Timestamps use RFC3339-style values such as:
@@ -144,6 +157,11 @@ This helper is intended to be the single source of truth for:
 - maximum latency,
 - slow-request thresholds.
 
+The current latency threshold semantics are cumulative by design:
+
+- a request slower than `500ms` also counts as slower than `250ms` and `100ms`,
+- a request slower than `250ms` also counts as slower than `100ms`.
+
 ### Windowing
 
 Windowed functions should not duplicate path aggregation logic.
@@ -163,6 +181,8 @@ This helper is intentionally lower-level than `PathWindowMetrics` so it can be r
 - level totals by window,
 - status totals by window,
 - path metrics by window.
+
+The helper currently sorts the input slice before bucketing. That is acceptable for now, but remains a deliberate tradeoff to revisit if callers later expect the input order to remain untouched.
 
 ### Rolling Window Semantics
 
@@ -257,6 +277,17 @@ This function is intended to:
 
 It should not return one entry per path.
 
+### JSON Output Readiness
+
+Dashboard structs now include JSON tags so metric results can be encoded directly for machine-readable output.
+
+The current tag style is snake_case, for example:
+
+- `request_count`
+- `duration_ms`
+- `status_5xx`
+- `slow_over_500_ms`
+
 ### LatencyByPath
 
 This function is intended to:
@@ -284,6 +315,7 @@ Current file layout:
 - `path_metrics.go`
 - `window_helpers.go`
 - `window_metrics.go`
+- package-local `_test.go` files beside the code they exercise
 
 This keeps:
 
@@ -308,3 +340,21 @@ Future repeated field-by-field accumulations may justify small helpers such as:
 - updating latency accumulators from records.
 
 These should remain narrow and purpose-specific.
+
+## Testing Decisions
+
+Tests are intentionally colocated with the package code rather than moved into a separate test-only directory.
+
+This keeps:
+
+- tests close to the implementation they exercise,
+- package-private helpers testable,
+- Go tooling simple and idiomatic.
+
+Current tests cover:
+
+- parser helpers in `cmd/High-Performance-Log-Processor`,
+- path aggregation,
+- latency and slow-path views,
+- window bucketing,
+- windowed metrics and error-rate aggregation.

@@ -84,7 +84,6 @@ func GetValue(field string, wantedKey []string) string {
 			}
 		}
 	}
-
 	return value
 }
 
