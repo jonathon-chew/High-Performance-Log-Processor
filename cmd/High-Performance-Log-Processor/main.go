@@ -64,17 +64,13 @@ func GetValue(field string, wantedKey []string) string {
 		if !strings.Contains(content, "=") {
 			continue
 		}
-
 		// Split on the first = as = might be in the value but should never be in the key!
 		splitLine := strings.Split(content, "=")
-
 		// Split on a string that doesn't exist returns the string as an array with one item
 		if len(splitLine) != 2 {
 			continue
 		}
-
 		key = splitLine[0]
-
 		if key == field {
 			value = splitLine[1]
 
@@ -85,6 +81,66 @@ func GetValue(field string, wantedKey []string) string {
 		}
 	}
 	return value
+}
+
+// BuildLogRecord should parse a tokenized log line in a single pass and return
+// the resulting LogRecord rather than repeatedly scanning for individual fields.
+func BuildLogRecord(tokens []string) dashboard.LogRecord {
+	// panic("not implemented")
+
+	var key, value string
+	var logLine dashboard.LogRecord
+
+	for _, content := range tokens {
+		if !strings.Contains(content, "=") {
+			continue
+		}
+		// Split on the first = as = might be in the value but should never be in the key!
+		splitLine := strings.Split(content, "=")
+		// Split on a string that doesn't exist returns the string as an array with one item
+		if len(splitLine) != 2 {
+			continue
+		}
+
+		key = splitLine[0]
+		value = splitLine[1]
+
+		if len(value) > 1 && value[0] == '"' && value[len(value)-1] == '"' {
+			value = value[1 : len(value)-1]
+		}
+
+		switch key {
+		case "ts":
+			logtime, err := time.Parse(time.RFC3339Nano, value)
+			if err != nil {
+				os.Stderr.Write([]byte("Unable to parse time! " + GetValue("ts", tokens)))
+			}
+
+			logLine.TS = logtime
+		case "level":
+			logLine.Level = value
+		case "req_id":
+			logLine.RequestID = value
+		case "method":
+			logLine.Method = value
+		case "path":
+			logLine.Path = value
+		case "status":
+			logLine.Status = StringToInt(value)
+		case "duration_ms":
+			logLine.DurationMS = StringToInt(value)
+		case "bytes":
+			logLine.Bytes = StringToInt(value)
+		case "ip":
+			logLine.IP = value
+		case "ua":
+			logLine.UserAgent = value
+		case "msg":
+			logLine.Message = value
+		}
+	}
+
+	return logLine
 }
 
 func main() {
@@ -133,33 +189,7 @@ func main() {
 		// add the final message!
 		splitLog = append(splitLog, line[start:])
 
-		/* if len(splitLog) != 11 {
-			log.Panic("The line can not be parsed correctly")
-		} */
-
-		logtime, err := time.Parse(time.RFC3339Nano, GetValue("ts", splitLog))
-		if err != nil {
-			os.Stderr.Write([]byte("Unable to parse time! " + GetValue("ts", splitLog)))
-		}
-
-		// ts=2026-03-14T09:01:20.006Z level=INFO req_id=0f4c9f3d method=GET path=/health status=200 duration_ms=1 bytes=2 ip=10.0.0.5 ua="kube-probe/1.31" msg="request complete"
-		var logLine = dashboard.LogRecord{
-			TS:         logtime,
-			Level:      GetValue("level", splitLog),
-			RequestID:  GetValue("req_id", splitLog),
-			Method:     GetValue("method", splitLog),
-			Path:       GetValue("path", splitLog),
-			Status:     StringToInt(GetValue("status", splitLog)),
-			DurationMS: StringToInt(GetValue("duration_ms", splitLog)),
-			Bytes:      StringToInt(GetValue("bytes", splitLog)),
-			IP:         GetValue("ip", splitLog),
-			// Hint: quoted fields like ua and msg still include their surrounding
-			// quotes at this stage. Trimming those is a separate parsing step.
-			UserAgent: GetValue("ua", splitLog),
-			Message:   GetValue("msg", splitLog),
-		}
-
-		Logs = append(Logs, logLine)
+		Logs = append(Logs, BuildLogRecord(splitLog))
 	}
 
 	if bufReader.Err() != nil {
