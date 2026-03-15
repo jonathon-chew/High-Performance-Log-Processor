@@ -4,7 +4,7 @@ import (
 	"High-Performance-Log-Processor/internal/cli"
 	"High-Performance-Log-Processor/internal/dashboard"
 	"bufio"
-	"fmt"
+	"encoding/json"
 	"log"
 	"os"
 	"strconv"
@@ -38,7 +38,7 @@ func StringToInt(st string) int {
 
 func ParseTime(inputTime string) DateTime {
 	// 2026-03-14T09:01:20.006Z
-	timeValue := GetValue(inputTime)
+	timeValue := GetValue("ts", []string{inputTime})
 
 	splitTime := strings.Split(timeValue, "T")
 	dateFields := strings.Split(splitTime[0], "-")
@@ -54,13 +54,35 @@ func ParseTime(inputTime string) DateTime {
 	}
 }
 
-func GetValue(field string) string {
-	splitLine := strings.Split(field, "=")
-	// key := splitLine[0]
-	value := splitLine[1]
+// Take in a string
+// Split on the =
+func GetValue(field string, wantedKey []string) string {
 
-	if value[0] == '"' && value[len(value)-1] == '"' {
-		value = value[1 : len(value)-2]
+	var key, value string
+
+	for _, content := range wantedKey {
+		if !strings.Contains(content, "=") {
+			continue
+		}
+
+		// Split on the first = as = might be in the value but should never be in the key!
+		splitLine := strings.Split(content, "=")
+
+		// Split on a string that doesn't exist returns the string as an array with one item
+		if len(splitLine) != 2 {
+			continue
+		}
+
+		key = splitLine[0]
+
+		if key == field {
+			value = splitLine[1]
+
+			if len(value) > 1 && value[0] == '"' && value[len(value)-1] == '"' {
+				value = value[1 : len(value)-1]
+				break
+			}
+		}
 	}
 
 	return value
@@ -112,29 +134,30 @@ func main() {
 		// add the final message!
 		splitLog = append(splitLog, line[start:])
 
-		if len(splitLog) != 11 {
+		/* if len(splitLog) != 11 {
 			log.Panic("The line can not be parsed correctly")
-		}
+		} */
 
-		logtime, err := time.Parse(time.RFC3339Nano, GetValue(splitLog[0]))
+		logtime, err := time.Parse(time.RFC3339Nano, GetValue("ts", splitLog))
 		if err != nil {
-			log.Println("Unable to parse time!")
+			os.Stderr.Write([]byte("Unable to parse time! " + GetValue("ts", splitLog)))
 		}
 
+		// ts=2026-03-14T09:01:20.006Z level=INFO req_id=0f4c9f3d method=GET path=/health status=200 duration_ms=1 bytes=2 ip=10.0.0.5 ua="kube-probe/1.31" msg="request complete"
 		var logLine = dashboard.LogRecord{
 			TS:         logtime,
-			Level:      GetValue(splitLog[1]),
-			RequestID:  GetValue(splitLog[2]),
-			Method:     GetValue(splitLog[3]),
-			Path:       GetValue(splitLog[4]),
-			Status:     StringToInt(GetValue(splitLog[5])),
-			DurationMS: StringToInt(GetValue(splitLog[6])),
-			Bytes:      StringToInt(GetValue(splitLog[7])),
-			IP:         GetValue(splitLog[8]),
+			Level:      GetValue("level", splitLog),
+			RequestID:  GetValue("req_id", splitLog),
+			Method:     GetValue("method", splitLog),
+			Path:       GetValue("path", splitLog),
+			Status:     StringToInt(GetValue("status", splitLog)),
+			DurationMS: StringToInt(GetValue("duration_ms", splitLog)),
+			Bytes:      StringToInt(GetValue("bytes", splitLog)),
+			IP:         GetValue("ip", splitLog),
 			// Hint: quoted fields like ua and msg still include their surrounding
 			// quotes at this stage. Trimming those is a separate parsing step.
-			UserAgent: GetValue(splitLog[9]),
-			Message:   GetValue(splitLog[10]),
+			UserAgent: GetValue("ua", splitLog),
+			Message:   GetValue("msg", splitLog),
 		}
 
 		Logs = append(Logs, logLine)
@@ -146,14 +169,9 @@ func main() {
 	}
 
 	for _, i := range dashboard.MetricsByPath(Logs) {
-		fmt.Println(i)
+		err := json.NewEncoder(os.Stdout).Encode(i)
+		if err != nil {
+			continue
+		}
 	}
-
-	/* fmt.Print("There were: ", len(Logs.AllLogs), " logs. ", strconv.Itoa(warnings), " were warnings\n")
-	fmt.Print(
-		"There were: ", len(Logs.Methods), " Methods. ", Logs.Methods, "\n",
-		"There were: ", len(Logs.Levels), " Levels. ", Logs.Levels, "\n",
-		"There were: ", len(Logs.Paths), " Paths. ", Logs.Paths, "\n",
-		"There were: ", len(Logs.Statuses), " Statuses. ", Logs.Statuses, "\n",
-	) */
 }
