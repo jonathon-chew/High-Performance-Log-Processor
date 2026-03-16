@@ -8,6 +8,7 @@ const version string = "0.0.1"
 
 type Flags struct {
 	FileName string
+	Ping     bool
 }
 
 func CLI(args []string) Flags {
@@ -25,6 +26,10 @@ func CLI(args []string) Flags {
 			os.Stderr.Write([]byte("USEAGE: pass in a file name"))
 		case "version":
 			os.Stderr.Write([]byte("Version: " + version))
+		case "ping":
+			return Flags{
+				Ping: true,
+			}
 		}
 	}
 
