@@ -20,6 +20,7 @@ func main() {
 
 	if Flags.Ping {
 		parseinput.ParsePing()
+		return
 	}
 
 	if Flags.FileName == "" {
