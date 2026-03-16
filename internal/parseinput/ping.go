@@ -1,8 +1,7 @@
-package ping
+package parseinput
 
 import (
 	"High-Performance-Log-Processor/internal/dashboard"
-	"High-Performance-Log-Processor/internal/parseinput"
 	"bufio"
 	"encoding/json"
 	"fmt"
@@ -20,7 +19,7 @@ func ParsePing() {
 		line := scanner.Text()
 		var ip string
 
-		if strings.Index(line, ":") != -1 {
+		if strings.Contains(line, ":") {
 			ip = line[:strings.Index(line, ":")]
 		} else {
 			ip = "Failed ping"
@@ -29,7 +28,7 @@ func ParsePing() {
 		parts := strings.Split(line, " ")
 		var path string
 
-		if path = parseinput.GetValue("ttl", parts); path == "" {
+		if path = GetValue("ttl", parts); path == "" {
 			path = "Error Path"
 		}
 
@@ -37,16 +36,16 @@ func ParsePing() {
 		var templog = dashboard.LogRecord{
 			TS:         time.Now(),
 			IP:         ip,
-			DurationMS: parseinput.StringToInt(parseinput.GetValue("time", parts)),
+			DurationMS: StringToInt(GetValue("time", parts)),
 			Path:       path,
 		}
 
-		parseinput.Logs = append(parseinput.Logs, templog)
+		Logs = append(Logs, templog)
 		/* if err := json.NewEncoder(os.Stdout).Encode(dashboard.MetricsByPath(Logs)); err != nil {
 			continue
 		} */
 
-		message, err := json.Marshal(dashboard.MetricsByPath(parseinput.Logs))
+		message, err := json.Marshal(dashboard.MetricsByPath(Logs))
 		if err != nil {
 			continue
 		}
