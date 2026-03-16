@@ -13,21 +13,22 @@ import (
 func main() {
 
 	var Flags cli.Flags
+	var Logs []dashboard.LogRecord
 
 	if len(os.Args) > 1 {
 		Flags = cli.CLI(os.Args[1:])
 	}
 
 	if Flags.Ping {
-		parseinput.ParsePing()
+		parseinput.ParsePing(Flags)
 		return
 	}
 
 	if Flags.FileName == "" {
 		os.Exit(1)
+	} else {
+		Logs = parseinput.ParseFile(Flags)
 	}
-
-	Logs := parseinput.ParseFile(Flags)
 
 	for _, i := range dashboard.MetricsByPath(Logs) {
 		err := json.NewEncoder(os.Stdout).Encode(i)

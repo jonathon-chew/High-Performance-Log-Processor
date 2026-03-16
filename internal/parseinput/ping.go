@@ -1,6 +1,7 @@
 package parseinput
 
 import (
+	"High-Performance-Log-Processor/internal/cli"
 	"High-Performance-Log-Processor/internal/dashboard"
 	"bufio"
 	"encoding/json"
@@ -11,7 +12,7 @@ import (
 	"time"
 )
 
-func ParsePing() {
+func ParsePing(Flags cli.Flags) {
 	scanner := bufio.NewScanner(os.Stdin)
 	lastRowCount := 0
 
@@ -41,9 +42,6 @@ func ParsePing() {
 		}
 
 		Logs = append(Logs, templog)
-		/* if err := json.NewEncoder(os.Stdout).Encode(dashboard.MetricsByPath(Logs)); err != nil {
-			continue
-		} */
 
 		message, err := json.Marshal(dashboard.MetricsByPath(Logs))
 		if err != nil {

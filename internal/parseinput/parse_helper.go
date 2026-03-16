@@ -23,6 +23,9 @@ func StringToInt(st string) int {
 	if strings.Contains(st, ".") {
 		st = st[:strings.IndexByte(st, '.')]
 	}
+	if strings.Contains(st, "ms") {
+		st = st[:strings.Index(st, "ms")]
+	}
 	newInt, err := strconv.Atoi(st)
 	if err != nil {
 		return 0
@@ -64,7 +67,7 @@ func GetValue(field string, wantedKey []string) string {
 		if len(splitLine) != 2 {
 			continue
 		}
-		key = splitLine[0]
+		key = strings.ToLower(splitLine[0])
 		if key == field {
 			value = splitLine[1]
 
