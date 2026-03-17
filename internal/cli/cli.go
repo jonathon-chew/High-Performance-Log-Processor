@@ -1,14 +1,17 @@
 package cli
 
 import (
+	"log"
 	"os"
+	"time"
 )
 
-const version string = "0.0.1"
+const version string = "0.0.2"
 
 type Flags struct {
 	FileName string
 	Ping     bool
+	Bucket   time.Duration
 }
 
 func CLI(args []string) Flags {
@@ -30,6 +33,12 @@ func CLI(args []string) Flags {
 			return Flags{
 				Ping: true,
 			}
+		case "--time":
+			bucket, err := time.ParseDuration(arg)
+			if err != nil {
+				log.Fatal("Unable to parse time: ", err)
+			}
+			returnFlags.Bucket = bucket
 		}
 	}
 
