@@ -82,6 +82,40 @@ Current useful commands:
 
 Additional design notes live in `doc/design.md`.
 
+## Usage
+
+Current CLI behavior is intentionally small.
+
+Supported modes today:
+
+- parse a log file and print aggregated path metrics as JSON
+- parse `ping` output from `stdin`
+- print `help`
+- print `version`
+
+Examples:
+
+```bash
+go run ./cmd/High-Performance-Log-Processor ./testdata/access.log
+```
+
+```bash
+ping 8.8.8.8 | go run ./cmd/High-Performance-Log-Processor ping
+```
+
+## Example Output
+
+The current file-processing path prints one JSON object per aggregated path.
+
+Example:
+
+```json
+{"path":"/api/login","request_count":4,"level_counts":{"info_count":1,"warn_count":3},"status_counts":{"status_2xx":1,"status_4xx":3},"latency":{"count":4,"total_ms":59,"average_ms":14,"max_ms":19}}
+{"path":"/api/products","request_count":2,"level_counts":{"info_count":2},"status_counts":{"status_2xx":2},"latency":{"count":2,"total_ms":39,"average_ms":19,"max_ms":21}}
+```
+
+The exact output depends on the input data and the currently selected built-in aggregation path, which is `MetricsByPath`.
+
 ## Project Structure
 
 ```text
