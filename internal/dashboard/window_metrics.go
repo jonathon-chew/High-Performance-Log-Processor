@@ -3,13 +3,41 @@ package dashboard
 // RequestsByWindow should return total request counts for each time bucket,
 // regardless of method, path, level, or status code.
 func RequestsByWindow(records []LogRecord, bucketSize BucketSize) []RequestVolumePoint {
-	panic("not implemented")
+	// panic("not implemented")
+	var returnRequestVolumePoint []RequestVolumePoint
+
+	for _, bucket := range groupRecordsByWindow(records, bucketSize) {
+		returnRequestVolumePoint = append(returnRequestVolumePoint, RequestVolumePoint{
+			Window:       bucket.Window,
+			RequestCount: len(bucket.Records),
+		})
+	}
+
+	return returnRequestVolumePoint
 }
 
 // LevelsByWindow should return INFO, WARN, and ERROR totals for each time bucket
 // across all requests.
 func LevelsByWindow(records []LogRecord, bucketSize BucketSize) []LevelVolumePoint {
-	panic("not implemented")
+	// panic("not implemented")
+
+	var returnLevelVolumePoint []LevelVolumePoint
+
+	for _, bucket := range groupRecordsByWindow(records, bucketSize) {
+		var levelCount LevelCounts
+		for _, record := range aggregatePathMetrics(bucket.Records) {
+			levelCount.InfoCount += record.LevelCounts.InfoCount
+			levelCount.ErrorCount += record.LevelCounts.ErrorCount
+			levelCount.WarnCount += record.LevelCounts.WarnCount
+		}
+
+		returnLevelVolumePoint = append(returnLevelVolumePoint, LevelVolumePoint{
+			Window: bucket.Window,
+			Counts: levelCount,
+		})
+	}
+
+	return returnLevelVolumePoint
 }
 
 // WarnAndErrorCountsByWindow should return WARN and ERROR totals for each time bucket.
