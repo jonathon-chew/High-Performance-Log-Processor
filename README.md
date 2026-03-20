@@ -66,11 +66,23 @@ Current progress includes:
 - realistic sample fixtures in `testdata/`,
 - shared path aggregation helpers,
 - shared window bucketing helpers,
-- implemented path and window metric functions for selected reports,
+- implemented path and window metric functions for:
+  - requests by window,
+  - levels by window,
+  - warn/error counts by window,
+  - status classes by window,
+  - status codes by window,
+  - metrics by path,
+  - metrics by path and window,
+  - latency by path,
+  - slow requests by path,
+  - slow requests by window,
+  - error rate by path,
+  - error rate by window,
 - JSON-ready dashboard structs,
 - a focused automated test suite for the implemented behavior.
 
-The project is still in active development. Some metric/report functions remain unimplemented, malformed-input handling is still being refined, and the CLI/output surface is still minimal.
+The project is still in active development. Malformed-input handling is still being refined, the CLI/output surface is still minimal, and the parsing path still has some performance and robustness cleanup left.
 
 ## Development Notes
 

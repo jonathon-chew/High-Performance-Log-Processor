@@ -182,6 +182,17 @@ This helper is intentionally lower-level than `PathWindowMetrics` so it can be r
 - status totals by window,
 - path metrics by window.
 
+At the moment, the current windowed metric layer includes:
+
+- `RequestsByWindow`
+- `LevelsByWindow`
+- `WarnAndErrorCountsByWindow`
+- `StatusClassesByWindow`
+- `StatusCodesByWindow`
+- `MetricsByPathAndWindow`
+- `SlowRequestsByWindow`
+- `ErrorRateByWindow`
+
 The helper currently sorts the input slice before bucketing. That is acceptable for now, but remains a deliberate tradeoff to revisit if callers later expect the input order to remain untouched.
 
 ### Rolling Window Semantics
@@ -254,6 +265,50 @@ This function is intended to:
 - group records into time buckets,
 - aggregate each bucket by path using `aggregatePathMetrics`,
 - return one `PathWindowMetrics` per bucket.
+
+### RequestsByWindow
+
+This function is intended to:
+
+- group records into windows,
+- return one request-count total per bucket,
+- use the raw bucket length as the request count.
+
+### LevelsByWindow
+
+This function is intended to:
+
+- group records into windows,
+- aggregate INFO, WARN, and ERROR totals per bucket,
+- return one `LevelVolumePoint` per bucket.
+
+### WarnAndErrorCountsByWindow
+
+This function currently returns `LevelVolumePoint` values per bucket, using the same `LevelCounts` structure as `LevelsByWindow`.
+
+The main semantic intent is:
+
+- WARN totals per bucket
+- ERROR totals per bucket
+
+Whether `InfoCount` should continue to be populated here remains an open design choice.
+
+### StatusClassesByWindow
+
+This function is intended to:
+
+- group records into windows,
+- aggregate `1xx`, `2xx`, `3xx`, `4xx`, and `5xx` counts per bucket,
+- return one `StatusClassVolumePoint` per bucket.
+
+### StatusCodesByWindow
+
+This function is intended to:
+
+- group records into windows,
+- count exact HTTP status codes directly from the records in each bucket,
+- return one `StatusCodeVolumePoint` per bucket,
+- sort status codes within each bucket for stable output.
 
 ### ErrorRateByPath
 
@@ -357,4 +412,10 @@ Current tests cover:
 - path aggregation,
 - latency and slow-path views,
 - window bucketing,
+- windowed request counts,
+- windowed level counts,
+- windowed warn/error counts,
+- windowed status-class aggregation,
+- windowed exact status-code aggregation,
+- windowed slow-request counts,
 - windowed metrics and error-rate aggregation.

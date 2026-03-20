@@ -1,5 +1,7 @@
 package dashboard
 
+import "slices"
+
 // RequestsByWindow should return total request counts for each time bucket,
 // regardless of method, path, level, or status code.
 func RequestsByWindow(records []LogRecord, bucketSize BucketSize) []RequestVolumePoint {
@@ -41,15 +43,56 @@ func LevelsByWindow(records []LogRecord, bucketSize BucketSize) []LevelVolumePoi
 }
 
 // WarnAndErrorCountsByWindow should return WARN and ERROR totals for each time bucket.
-// INFO counts may be zeroed or ignored depending on the final implementation.
+// INFO counts currently remain available in the returned LevelCounts structure,
+// but WARN and ERROR are the primary intent of this view.
 func WarnAndErrorCountsByWindow(records []LogRecord, bucketSize BucketSize) []LevelVolumePoint {
-	panic("not implemented")
+	// panic("not implemented")
+
+	var returnLevelVolumePoint []LevelVolumePoint
+
+	windowBucket := groupRecordsByWindow(records, bucketSize)
+
+	for _, bucket := range windowBucket {
+		var tempCounts LevelCounts
+		for _, data := range aggregatePathMetrics(bucket.Records) {
+			tempCounts.InfoCount += data.LevelCounts.InfoCount
+			tempCounts.WarnCount += data.LevelCounts.WarnCount
+			tempCounts.ErrorCount += data.LevelCounts.ErrorCount
+		}
+
+		returnLevelVolumePoint = append(returnLevelVolumePoint, LevelVolumePoint{
+			Window: bucket.Window,
+			Counts: tempCounts,
+		})
+	}
+
+	return returnLevelVolumePoint
 }
 
 // StatusClassesByWindow should return totals for each HTTP status class
 // (1xx, 2xx, 3xx, 4xx, 5xx) for every time bucket.
 func StatusClassesByWindow(records []LogRecord, bucketSize BucketSize) []StatusClassVolumePoint {
-	panic("not implemented")
+	// panic("not implemented")
+
+	var returnStatusClassVolumePoint []StatusClassVolumePoint
+
+	for _, bucket := range groupRecordsByWindow(records, bucketSize) {
+		var tempStatusClassCounts StatusClassCounts
+		for _, data := range aggregatePathMetrics(bucket.Records) {
+			tempStatusClassCounts.Status1xx += data.StatusCounts.Status1xx
+			tempStatusClassCounts.Status2xx += data.StatusCounts.Status2xx
+			tempStatusClassCounts.Status3xx += data.StatusCounts.Status3xx
+			tempStatusClassCounts.Status4xx += data.StatusCounts.Status4xx
+			tempStatusClassCounts.Status5xx += data.StatusCounts.Status5xx
+		}
+
+		returnStatusClassVolumePoint = append(returnStatusClassVolumePoint, StatusClassVolumePoint{
+			Window: bucket.Window,
+			Counts: tempStatusClassCounts,
+		})
+	}
+
+	return returnStatusClassVolumePoint
 }
 
 // StatusCodesByWindow should return totals for each exact HTTP status code
@@ -57,7 +100,39 @@ func StatusClassesByWindow(records []LogRecord, bucketSize BucketSize) []StatusC
 // This is intended to support views such as:
 // 200=152, 201=18, 404=6, 429=2, 500=1.
 func StatusCodesByWindow(records []LogRecord, bucketSize BucketSize) []StatusCodeVolumePoint {
-	panic("not implemented")
+	// panic("not implemented")
+
+	var returnStatusCodeVolumePoint []StatusCodeVolumePoint
+
+	for _, bucket := range groupRecordsByWindow(records, bucketSize) {
+		var statusCodeCounts []StatusCodeCount
+		var groupStatusCodes = make(map[int]int)
+		var order []int
+
+		for _, data := range bucket.Records {
+			groupStatusCodes[data.Status] += 1
+		}
+
+		for keys, _ := range groupStatusCodes {
+			order = append(order, keys)
+		}
+		slices.Sort(order)
+
+		for _, statusCode := range order {
+			statusCodeCounts = append(statusCodeCounts, StatusCodeCount{
+				StatusCode: statusCode,
+				Count:      groupStatusCodes[statusCode],
+			})
+		}
+
+		returnStatusCodeVolumePoint = append(returnStatusCodeVolumePoint, StatusCodeVolumePoint{
+			Window: bucket.Window,
+			Counts: statusCodeCounts,
+		})
+
+	}
+
+	return returnStatusCodeVolumePoint
 }
 
 // MetricsByPathAndWindow should return per-path metrics inside each time bucket.
@@ -86,7 +161,23 @@ func MetricsByPathAndWindow(records []LogRecord, bucketSize BucketSize) []PathWi
 // all requests over a chosen threshold, or
 // a combined count of threshold breaches.
 func SlowRequestsByWindow(records []LogRecord, bucketSize BucketSize) []RequestVolumePoint {
-	panic("not implemented")
+	// panic("not implemented")
+
+	var returnRequestVolumePoint []RequestVolumePoint
+
+	for _, bucket := range groupRecordsByWindow(records, bucketSize) {
+		var count int
+		for _, record := range aggregatePathMetrics(bucket.Records) {
+			// SlowOver100MS is currently implimented so over 250 is counted twice - over 100 and over 250, so this will be all over the minimum threshold
+			count = record.Latency.SlowOver100MS
+		}
+		returnRequestVolumePoint = append(returnRequestVolumePoint, RequestVolumePoint{
+			Window:       bucket.Window,
+			RequestCount: count,
+		})
+	}
+
+	return returnRequestVolumePoint
 }
 
 // ErrorRateByWindow should return status-class totals per time bucket so overall
