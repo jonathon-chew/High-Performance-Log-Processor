@@ -169,7 +169,7 @@ func SlowRequestsByWindow(records []LogRecord, bucketSize BucketSize) []RequestV
 		var count int
 		for _, record := range aggregatePathMetrics(bucket.Records) {
 			// SlowOver100MS is currently implimented so over 250 is counted twice - over 100 and over 250, so this will be all over the minimum threshold
-			count = record.Latency.SlowOver100MS
+			count += record.Latency.SlowOver100MS
 		}
 		returnRequestVolumePoint = append(returnRequestVolumePoint, RequestVolumePoint{
 			Window:       bucket.Window,

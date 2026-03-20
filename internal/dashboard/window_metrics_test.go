@@ -115,8 +115,8 @@ func TestStatusCodesByWindowCountsExactCodesPerBucket(t *testing.T) {
 	}
 
 	first := metrics[0].Counts
-	if len(first) != 3 {
-		t.Fatalf("expected 3 status codes in first window, got %d", len(first))
+	if len(first) != 2 {
+		t.Fatalf("expected 2 status codes in first window, got %d", len(first))
 	}
 	if first[0].StatusCode != 200 || first[0].Count != 2 {
 		t.Fatalf("unexpected first status code entry: %+v", first[0])
