@@ -16,6 +16,11 @@ The first target is file-based analysis, with possible later support for:
 - long-running piped input such as `tail -f`,
 - optional network ingestion after the file pipeline is solid.
 
+The current implementation now supports both:
+
+- file-based parsing,
+- a `ping` stdin mode for lightweight live experimentation.
+
 ## Input Format
 
 The first log format is a plain-text `key=value` format with quoted values for fields that may contain spaces.
@@ -79,6 +84,8 @@ Current behavior:
 - records with invalid timestamps are still appended with the zero-value `time.Time`.
 
 This behavior is intentional for now so log processing can continue while malformed-line policy is still being designed.
+
+The `ping` path is intentionally looser and currently adapts non-HTTP input into the shared `LogRecord` shape for convenience rather than perfect schema purity.
 
 ### Time Parsing
 
@@ -342,6 +349,50 @@ The current tag style is snake_case, for example:
 - `duration_ms`
 - `status_5xx`
 - `slow_over_500_ms`
+
+## CLI Decisions
+
+The CLI remains intentionally manual and lightweight.
+
+Parsing style:
+
+- loop through raw args,
+- use a `switch` statement,
+- populate a `Flags` struct,
+- keep the command surface simple and explicit.
+
+Current CLI behavior:
+
+- file input selects a report and outputs its results,
+- `ping` enters a separate stdin-driven mode,
+- `help` prints usage text,
+- `version` prints the current version.
+
+Current report selectors:
+
+- `MetricsByPath`
+- `LatencyByPath`
+- `SlowRequestsByPath`
+- `ErrorRateByPath`
+- `RequestsByWindow`
+- `LevelsByWindow`
+- `WarnAndErrorCountsByWindow`
+- `StatusClassesByWindow`
+- `StatusCodesByWindow`
+- `MetricsByPathAndWindow`
+- `SlowRequestsByWindow`
+- `ErrorRateByWindow`
+
+Current flag decisions:
+
+- `--time` configures bucket size for windowed reports
+- `--output JSON` enables JSON encoding
+
+Current default decisions:
+
+- file input defaults to `MetricsByPath` when no report is chosen
+- windowed reports default to a `5m` bucket when no bucket is provided
+- `ping` is treated as a terminal mode and intentionally ignores later args in the current implementation
 
 ### LatencyByPath
 

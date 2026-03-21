@@ -100,15 +100,48 @@ Current CLI behavior is intentionally small.
 
 Supported modes today:
 
-- parse a log file and print aggregated path metrics as JSON
+- parse a log file and choose a metric/report to emit
 - parse `ping` output from `stdin`
 - print `help`
 - print `version`
+
+Current report options:
+
+- `MetricsByPath`
+- `LatencyByPath`
+- `SlowRequestsByPath`
+- `ErrorRateByPath`
+- `RequestsByWindow`
+- `LevelsByWindow`
+- `WarnAndErrorCountsByWindow`
+- `StatusClassesByWindow`
+- `StatusCodesByWindow`
+- `MetricsByPathAndWindow`
+- `SlowRequestsByWindow`
+- `ErrorRateByWindow`
+
+Current flags:
+
+- `--time <duration>` for windowed reports
+- `--output JSON`
+
+Current CLI defaults:
+
+- if no report is given for file input, the program defaults to `MetricsByPath`
+- if no bucket is given for windowed reports, the program defaults to `5m`
 
 Examples:
 
 ```bash
 go run ./cmd/High-Performance-Log-Processor ./testdata/access.log
+```
+
+```bash
+go run ./cmd/High-Performance-Log-Processor ./testdata/access.log MetricsByPath --output JSON
+```
+
+```bash
+go run ./cmd/High-Performance-Log-Processor ./testdata/access.log RequestsByWindow --time 5m --output JSON
 ```
 
 ```bash
@@ -126,7 +159,7 @@ Example:
 {"path":"/api/products","request_count":2,"level_counts":{"info_count":2},"status_counts":{"status_2xx":2},"latency":{"count":2,"total_ms":39,"average_ms":19,"max_ms":21}}
 ```
 
-The exact output depends on the input data and the currently selected built-in aggregation path, which is `MetricsByPath`.
+The exact output depends on the input data and the currently selected report. If no report is given for file input, the built-in default is `MetricsByPath`.
 
 ## Project Structure
 

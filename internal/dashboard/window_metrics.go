@@ -156,10 +156,10 @@ func MetricsByPathAndWindow(records []LogRecord, bucketSize BucketSize) []PathWi
 	return returnPathWindowMetrics
 }
 
-// SlowRequestsByWindow should return the number of slow requests inside each time bucket.
-// Depending on the final design, this may represent:
-// all requests over a chosen threshold, or
-// a combined count of threshold breaches.
+// SlowRequestsByWindow should return the number of requests above the current
+// minimum slow threshold inside each time bucket.
+// Because slow-threshold counts are cumulative today, this currently uses
+// SlowOver100MS as "all requests over the minimum slow threshold" for the bucket.
 func SlowRequestsByWindow(records []LogRecord, bucketSize BucketSize) []RequestVolumePoint {
 	// panic("not implemented")
 
@@ -168,7 +168,7 @@ func SlowRequestsByWindow(records []LogRecord, bucketSize BucketSize) []RequestV
 	for _, bucket := range groupRecordsByWindow(records, bucketSize) {
 		var count int
 		for _, record := range aggregatePathMetrics(bucket.Records) {
-			// SlowOver100MS is currently implimented so over 250 is counted twice - over 100 and over 250, so this will be all over the minimum threshold
+			// SlowOver100MS currently includes all requests over the minimum threshold.
 			count += record.Latency.SlowOver100MS
 		}
 		returnRequestVolumePoint = append(returnRequestVolumePoint, RequestVolumePoint{

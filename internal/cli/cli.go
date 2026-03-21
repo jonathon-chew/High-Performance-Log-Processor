@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const version string = "0.0.2"
+const version string = "0.2.0"
 
 type Flags struct {
 	FileName                   string
@@ -28,7 +28,6 @@ type Flags struct {
 }
 
 func CLI(args []string) Flags {
-
 	var returnFlags Flags
 
 	for index := 0; index < len(args); index++ {
@@ -37,25 +36,30 @@ func CLI(args []string) Flags {
 		switch arg {
 		default:
 			if _, err := os.Lstat(arg); err != nil {
-				os.Stderr.Write([]byte("[ERROR]: Did not recognise the command; " + arg))
+				log.Printf("[ERROR]: did not recognise the command: %s\n", arg)
 			}
 			returnFlags.FileName = arg
 		case "help":
-			os.Stderr.Write([]byte("USEAGE: pass in a file name"))
+			log.Print(usageText)
+			return Flags{}
 		case "version":
-			os.Stderr.Write([]byte("Version: " + version))
+			log.Printf("High-Performance-Log-Processor %s\n", version)
+			return Flags{}
 		case "output", "--output", "-o", "-output":
-			if len(args) >= index+1 {
-
+			if index+1 < len(args) {
+				if args[index+1] == "JSON" || args[index+1] == "json" || args[index+1] == "Json" || args[index+1] == "JSon" || args[index+1] == "JSOn" {
+					returnFlags.Output = "JSON"
+				}
+				index += 1
 			} else {
-				log.Panic("[ERROR]: No output detected")
+				log.Print("[WARNING]: no output format detected")
 			}
 		case "ping":
 			return Flags{
 				Ping: true,
 			}
 		case "--time":
-			if len(args) >= index+1 {
+			if index+1 < len(args) {
 				bucket, err := time.ParseDuration(args[index+1])
 				if err != nil {
 					log.Fatal("Unable to parse time: ", err)
@@ -63,14 +67,13 @@ func CLI(args []string) Flags {
 				returnFlags.Bucket = bucket
 				index++
 			} else {
-				log.Print("[waRNING]: No time period entered, defaulting to 5 minutes")
+				log.Print("[WARNING]: no time period entered, defaulting to 5 minutes")
 				bucket, err := time.ParseDuration("5m")
 				if err != nil {
 					log.Fatal("Unable to parse time: ", err)
 				}
 				returnFlags.Bucket = bucket
 			}
-			index += 1
 		case "MetricsByPath":
 			returnFlags.MetricsByPath = true
 		case "LatencyByPath":

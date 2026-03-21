@@ -16,15 +16,27 @@ import (
 
 func checkTimeDurationSet(inputTime time.Duration) time.Duration {
 
-	if inputTime == 0 {
-		bucket, err := time.ParseDuration("5m")
-		if err != nil {
-			log.Panic("[ERROR]: No time duration was found and could not be forced!")
-		}
-		return bucket
+	if inputTime > 0 {
+		return inputTime
 	}
 
-	return 0
+	bucket, err := time.ParseDuration("5m")
+	if err != nil {
+		log.Panic("[ERROR]: No time duration was found and could not be forced!")
+	}
+	return bucket
+
+}
+
+func output(record any, Flags cli.Flags) {
+	if Flags.Output == "JSON" {
+		err := json.NewEncoder(os.Stdout).Encode(record)
+		if err != nil {
+			log.Println("[WARNING]: Failed to encode: ", record)
+		}
+	} else {
+		fmt.Println(record)
+	}
 }
 
 func main() {
@@ -47,111 +59,65 @@ func main() {
 		Logs = parseinput.ParseFile(Flags)
 		switch {
 		default:
-			log.Panic("[ERROR]: No option of how to parse file")
-			os.Exit(1)
+			log.Println("[WARNING]: No option of how to parse file, defaulting to MetricsByPath")
+			for _, i := range dashboard.MetricsByPath(Logs) {
+				output(i, Flags)
+			}
 		case Flags.MetricsByPath == true:
 			for _, i := range dashboard.MetricsByPath(Logs) {
-				if Flags.Output == "JSON" {
-					json.NewEncoder(os.Stdout).Encode(i)
-				} else {
-					fmt.Println(i)
-				}
+				output(i, Flags)
 			}
 		case Flags.LatencyByPath == true:
 			for _, i := range dashboard.LatencyByPath(Logs) {
-				if Flags.Output == "JSON" {
-					json.NewEncoder(os.Stdout).Encode(i)
-				} else {
-					fmt.Println(i)
-				}
+				output(i, Flags)
 			}
 		case Flags.SlowRequestsByPath == true:
 			for _, i := range dashboard.SlowRequestsByPath(Logs) {
-				if Flags.Output == "JSON" {
-					json.NewEncoder(os.Stdout).Encode(i)
-				} else {
-					fmt.Println(i)
-				}
+				output(i, Flags)
 			}
 		case Flags.ErrorRateByPath == true:
 			for _, i := range dashboard.ErrorRateByPath(Logs) {
-				if Flags.Output == "JSON" {
-					json.NewEncoder(os.Stdout).Encode(i)
-				} else {
-					fmt.Println(i)
-				}
+				output(i, Flags)
 			}
 		case Flags.RequestsByWindow == true:
 			Flags.Bucket = checkTimeDurationSet(Flags.Bucket)
 			for _, i := range dashboard.RequestsByWindow(Logs, dashboard.BucketSize(Flags.Bucket)) {
-				if Flags.Output == "JSON" {
-					json.NewEncoder(os.Stdout).Encode(i)
-				} else {
-					fmt.Println(i)
-				}
+				output(i, Flags)
 			}
 		case Flags.LevelsByWindow == true:
 			Flags.Bucket = checkTimeDurationSet(Flags.Bucket)
 			for _, i := range dashboard.LevelsByWindow(Logs, dashboard.BucketSize(Flags.Bucket)) {
-				if Flags.Output == "JSON" {
-					json.NewEncoder(os.Stdout).Encode(i)
-				} else {
-					fmt.Println(i)
-				}
+				output(i, Flags)
 			}
 		case Flags.WarnAndErrorCountsByWindow == true:
 			Flags.Bucket = checkTimeDurationSet(Flags.Bucket)
 			for _, i := range dashboard.WarnAndErrorCountsByWindow(Logs, dashboard.BucketSize(Flags.Bucket)) {
-				if Flags.Output == "JSON" {
-					json.NewEncoder(os.Stdout).Encode(i)
-				} else {
-					fmt.Println(i)
-				}
+				output(i, Flags)
 			}
 		case Flags.StatusClassesByWindow == true:
 			Flags.Bucket = checkTimeDurationSet(Flags.Bucket)
 			for _, i := range dashboard.StatusClassesByWindow(Logs, dashboard.BucketSize(Flags.Bucket)) {
-				if Flags.Output == "JSON" {
-					json.NewEncoder(os.Stdout).Encode(i)
-				} else {
-					fmt.Println(i)
-				}
+				output(i, Flags)
 			}
 		case Flags.StatusCodesByWindow == true:
 			Flags.Bucket = checkTimeDurationSet(Flags.Bucket)
 			for _, i := range dashboard.StatusCodesByWindow(Logs, dashboard.BucketSize(Flags.Bucket)) {
-				if Flags.Output == "JSON" {
-					json.NewEncoder(os.Stdout).Encode(i)
-				} else {
-					fmt.Println(i)
-				}
+				output(i, Flags)
 			}
 		case Flags.MetricsByPathAndWindow == true:
 			Flags.Bucket = checkTimeDurationSet(Flags.Bucket)
 			for _, i := range dashboard.MetricsByPathAndWindow(Logs, dashboard.BucketSize(Flags.Bucket)) {
-				if Flags.Output == "JSON" {
-					json.NewEncoder(os.Stdout).Encode(i)
-				} else {
-					fmt.Println(i)
-				}
+				output(i, Flags)
 			}
 		case Flags.SlowRequestsByWindow == true:
 			Flags.Bucket = checkTimeDurationSet(Flags.Bucket)
 			for _, i := range dashboard.SlowRequestsByWindow(Logs, dashboard.BucketSize(Flags.Bucket)) {
-				if Flags.Output == "JSON" {
-					json.NewEncoder(os.Stdout).Encode(i)
-				} else {
-					fmt.Println(i)
-				}
+				output(i, Flags)
 			}
 		case Flags.ErrorRateByWindow == true:
 			Flags.Bucket = checkTimeDurationSet(Flags.Bucket)
 			for _, i := range dashboard.ErrorRateByWindow(Logs, dashboard.BucketSize(Flags.Bucket)) {
-				if Flags.Output == "JSON" {
-					json.NewEncoder(os.Stdout).Encode(i)
-				} else {
-					fmt.Println(i)
-				}
+				output(i, Flags)
 			}
 		}
 
