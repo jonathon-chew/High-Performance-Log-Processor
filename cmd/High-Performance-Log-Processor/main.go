@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -35,7 +34,7 @@ func output(record any, Flags cli.Flags) {
 			log.Println("[WARNING]: Failed to encode: ", record)
 		}
 	} else {
-		fmt.Println(record)
+		printTextOutput(record)
 	}
 }
 

@@ -1,5 +1,7 @@
 # High-Performance-Log-Processor Design Notes
 
+Open decisions that are still unresolved live in `doc/decisions.md`.
+
 ## Project Boundary
 
 The initial version of this project is intended to process logs after they have already been written.
@@ -72,6 +74,18 @@ The intended parsing flow is:
 
 This separation keeps the tokenizer small and makes later format changes easier to manage.
 
+The current implementation is now partially specialized for the known access-log schema:
+
+- `ParseFile` tokenizes one line at a time,
+- `BuildLogRecord` walks the resulting tokens and fills a `dashboard.LogRecord` directly,
+- the main parsing path is now a one-pass record builder rather than repeated field lookups.
+
+Some cleanup is still intentionally deferred:
+
+- `GetValue` still exists as a helper,
+- `BuildLogRecord` still uses `strings.Split` rather than a true split-on-first-`=`,
+- the timestamp error path still falls back to `GetValue` for its stderr message.
+
 ### Current Parser Resilience
 
 The parser is currently best-effort rather than strict.
@@ -82,6 +96,8 @@ Current behavior:
 - invalid integers currently fall back to `0`,
 - invalid timestamps are currently logged to stderr,
 - records with invalid timestamps are still appended with the zero-value `time.Time`.
+- tokens without `=` are currently skipped,
+- values wrapped in double quotes are unquoted during field parsing.
 
 This behavior is intentional for now so log processing can continue while malformed-line policy is still being designed.
 
@@ -350,6 +366,80 @@ The current tag style is snake_case, for example:
 - `status_5xx`
 - `slow_over_500_ms`
 
+## Output Shape Decisions
+
+The current CLI output behavior is now stable enough to document.
+
+### Current Output Mode
+
+When `--output JSON` is selected:
+
+- each result item is encoded independently,
+- output is newline-delimited JSON rather than one large JSON array,
+- file-based reports therefore emit one JSON object per returned metric item.
+
+When `--output JSON` is not selected:
+
+- output uses a dedicated text renderer rather than raw struct dumps,
+- each supported metric type is formatted into one aligned terminal line,
+- fixed-width formatting is used so columns stay readable even when path lengths vary.
+
+### Intended JSON Shapes
+
+The intended JSON shape follows the metric return type directly.
+
+Examples:
+
+- `MetricsByPath` emits one `PathMetrics` object per line
+- `LatencyByPath` emits one `PathLatencyMetrics` object per line
+- `RequestsByWindow` emits one `RequestVolumePoint` object per line
+- `LevelsByWindow` emits one `LevelVolumePoint` object per line
+- `StatusClassesByWindow` emits one `StatusClassVolumePoint` object per line
+- `StatusCodesByWindow` emits one `StatusCodeVolumePoint` object per line
+- `MetricsByPathAndWindow` emits one `PathWindowMetrics` object per line
+
+Representative shapes:
+
+```json
+{"path":"/api/login","request_count":4,"level_counts":{"info_count":1,"warn_count":3},"status_counts":{"status_2xx":1,"status_4xx":3},"latency":{"count":4,"total_ms":59,"average_ms":14,"max_ms":19}}
+```
+
+```json
+{"window":{"start":"2026-03-14T09:00:00Z","end":"2026-03-14T09:05:00Z"},"request_count":183}
+```
+
+```json
+{"window":{"start":"2026-03-14T09:00:00Z","end":"2026-03-14T09:05:00Z"},"counts":{"status_2xx":180,"status_4xx":3}}
+```
+
+```json
+{"window":{"start":"2026-03-14T09:00:00Z","end":"2026-03-14T09:05:00Z"},"counts":[{"status_code":200,"count":180},{"status_code":404,"count":3}]}
+```
+
+```json
+{"window":{"start":"2026-03-14T09:00:00Z","end":"2026-03-14T09:05:00Z"},"paths":[{"path":"/api/login","request_count":4,"level_counts":{"warn_count":3},"status_counts":{"status_4xx":3},"latency":{"count":4,"total_ms":59,"average_ms":14,"max_ms":19}}]}
+```
+
+These shapes are intentionally machine-readable first. If a more human-readable renderer is added later, it should be a separate output path rather than changing the JSON contract.
+
+### Current Text Output Shape
+
+The current non-JSON CLI output is human-readable and type-specific.
+
+Examples:
+
+```text
+/api/login               req=     4 info=   1 warn=   3 err=   0 2xx=   1 4xx=   3 5xx=   0 avg_ms=  14 max_ms=  19
+2026-03-14T09:00:00Z -> 2026-03-14T09:05:00Z requests=   183
+2026-03-14T09:00:00Z -> 2026-03-14T09:05:00Z 200=180 404=3 500=1
+```
+
+This is intentionally:
+
+- easy to scan in a terminal,
+- predictable for demos and local use,
+- separate from the JSON contract.
+
 ## CLI Decisions
 
 The CLI remains intentionally manual and lightweight.
@@ -392,7 +482,14 @@ Current default decisions:
 
 - file input defaults to `MetricsByPath` when no report is chosen
 - windowed reports default to a `5m` bucket when no bucket is provided
+- non-JSON output uses the aligned text renderer
 - `ping` is treated as a terminal mode and intentionally ignores later args in the current implementation
+
+The current CLI also routes:
+
+- `help` to stdout,
+- `version` to stdout,
+- unrecognized command text to stderr.
 
 ### LatencyByPath
 
@@ -460,9 +557,13 @@ This keeps:
 Current tests cover:
 
 - parser helpers in `cmd/High-Performance-Log-Processor`,
+- parser helper behavior in `internal/parseinput`,
+- CLI parsing and help/version output,
 - path aggregation,
+- JSON serialization shapes,
 - latency and slow-path views,
 - window bucketing,
+- exact bucket-boundary behavior,
 - windowed request counts,
 - windowed level counts,
 - windowed warn/error counts,

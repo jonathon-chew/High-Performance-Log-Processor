@@ -80,6 +80,7 @@ Current progress includes:
   - error rate by path,
   - error rate by window,
 - JSON-ready dashboard structs,
+- a human-readable aligned text renderer for default CLI output,
 - a focused automated test suite for the implemented behavior.
 
 The project is still in active development. Malformed-input handling is still being refined, the CLI/output surface is still minimal, and the parsing path still has some performance and robustness cleanup left.
@@ -129,6 +130,7 @@ Current CLI defaults:
 
 - if no report is given for file input, the program defaults to `MetricsByPath`
 - if no bucket is given for windowed reports, the program defaults to `5m`
+- if `--output JSON` is not provided, the program prints aligned text output
 
 Examples:
 
@@ -150,7 +152,16 @@ ping 8.8.8.8 | go run ./cmd/High-Performance-Log-Processor ping
 
 ## Example Output
 
-The current file-processing path prints one JSON object per aggregated path.
+The current file-processing path prints aligned text output by default.
+
+Example:
+
+```text
+/api/login               req=     4 info=   1 warn=   3 err=   0 2xx=   1 4xx=   3 5xx=   0 avg_ms=  14 max_ms=  19
+/api/products            req=     2 info=   2 warn=   0 err=   0 2xx=   2 4xx=   0 5xx=   0 avg_ms=  19 max_ms=  21
+```
+
+When `--output JSON` is selected, the current file-processing path prints one JSON object per result item.
 
 Example:
 

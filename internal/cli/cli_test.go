@@ -90,6 +90,14 @@ func TestCLIMissingOutputValueLeavesOutputUnset(t *testing.T) {
 	}
 }
 
+func TestCLIUnrecognisedOutputFormatLeavesOutputUnset(t *testing.T) {
+	flags := CLI([]string{"../../testdata/access.log", "--output", "yaml"})
+
+	if flags.Output != "" {
+		t.Fatalf("expected unsupported output format to remain unset, got %q", flags.Output)
+	}
+}
+
 func TestCLIParsesSpecificMetricSelection(t *testing.T) {
 	flags := CLI([]string{"../../testdata/access.log", "ErrorRateByWindow"})
 
@@ -112,6 +120,22 @@ func TestCLIReturnsPingImmediately(t *testing.T) {
 	}
 	if flags.Output != "" {
 		t.Fatalf("expected no output format after ping early return, got %q", flags.Output)
+	}
+}
+
+func TestCLIUnknownTrailingArgOverwritesFileNameAndPrintsError(t *testing.T) {
+	stdout, stderr := captureOutput(t, func() {
+		flags := CLI([]string{"../../testdata/access.log", "unknown-command"})
+		if flags.FileName != "unknown-command" {
+			t.Fatalf("expected unknown trailing arg to overwrite file name under current behavior, got %q", flags.FileName)
+		}
+	})
+
+	if stdout != "" {
+		t.Fatalf("expected no stdout for unknown arg, got %q", stdout)
+	}
+	if !strings.Contains(stderr, "did not recognise the command: unknown-command") {
+		t.Fatalf("expected stderr to mention unknown command, got %q", stderr)
 	}
 }
 
