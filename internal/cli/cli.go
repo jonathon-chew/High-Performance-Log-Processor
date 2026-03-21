@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -36,14 +37,14 @@ func CLI(args []string) Flags {
 		switch arg {
 		default:
 			if _, err := os.Lstat(arg); err != nil {
-				log.Printf("[ERROR]: did not recognise the command: %s\n", arg)
+				fmt.Fprintf(os.Stderr, "[ERROR]: did not recognise the command: %s\n", arg)
 			}
 			returnFlags.FileName = arg
 		case "help":
-			log.Print(usageText)
+			fmt.Fprint(os.Stdout, usageText)
 			return Flags{}
 		case "version":
-			log.Printf("High-Performance-Log-Processor %s\n", version)
+			fmt.Fprintf(os.Stdout, "High-Performance-Log-Processor %s\n", version)
 			return Flags{}
 		case "output", "--output", "-o", "-output":
 			if index+1 < len(args) {

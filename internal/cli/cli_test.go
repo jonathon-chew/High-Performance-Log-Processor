@@ -74,6 +74,33 @@ func TestCLIParsesBucketDuration(t *testing.T) {
 	}
 }
 
+func TestCLIMissingTimeValueDefaultsToFiveMinutes(t *testing.T) {
+	flags := CLI([]string{"../../testdata/access.log", "RequestsByWindow", "--time"})
+
+	if flags.Bucket != 5*time.Minute {
+		t.Fatalf("expected default 5m bucket, got %v", flags.Bucket)
+	}
+}
+
+func TestCLIMissingOutputValueLeavesOutputUnset(t *testing.T) {
+	flags := CLI([]string{"../../testdata/access.log", "--output"})
+
+	if flags.Output != "" {
+		t.Fatalf("expected output to remain unset, got %q", flags.Output)
+	}
+}
+
+func TestCLIParsesSpecificMetricSelection(t *testing.T) {
+	flags := CLI([]string{"../../testdata/access.log", "ErrorRateByWindow"})
+
+	if !flags.ErrorRateByWindow {
+		t.Fatal("expected ErrorRateByWindow flag to be set")
+	}
+	if flags.MetricsByPath {
+		t.Fatal("did not expect MetricsByPath to be set")
+	}
+}
+
 func TestCLIReturnsPingImmediately(t *testing.T) {
 	flags := CLI([]string{"ping", "MetricsByPath", "--output", "JSON"})
 
@@ -119,4 +146,3 @@ func TestCLIVersionPrintsVersionToStdout(t *testing.T) {
 		t.Fatalf("expected no stderr for version, got %q", stderr)
 	}
 }
-

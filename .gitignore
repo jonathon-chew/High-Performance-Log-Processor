@@ -1,3 +1,4 @@
 testdata/*
 Archive/*
 TODO.md
+.gocache/

@@ -29,6 +29,29 @@ func TestGroupRecordsByWindowBucketsSortedRecords(t *testing.T) {
 	}
 }
 
+func TestGroupRecordsByWindowIncludesBoundaryRecordInCurrentBucket(t *testing.T) {
+	records := []LogRecord{
+		{TS: mustTestTime("2026-03-14T09:00:00Z"), Path: "/api/a", Status: 200},
+		{TS: mustTestTime("2026-03-14T09:05:00Z"), Path: "/api/b", Status: 200},
+		{TS: mustTestTime("2026-03-14T09:05:01Z"), Path: "/api/c", Status: 200},
+	}
+
+	buckets := groupRecordsByWindow(records, BucketSize(5*60*1000000000))
+	if len(buckets) != 2 {
+		t.Fatalf("expected 2 buckets, got %d", len(buckets))
+	}
+
+	if len(buckets[0].Records) != 2 {
+		t.Fatalf("expected boundary record to stay in first bucket, got %d records", len(buckets[0].Records))
+	}
+	if len(buckets[1].Records) != 1 {
+		t.Fatalf("expected one record in second bucket, got %d", len(buckets[1].Records))
+	}
+	if got := buckets[0].Window.End; !got.Equal(mustTestTime("2026-03-14T09:05:00Z")) {
+		t.Fatalf("expected first bucket to end at exact boundary timestamp, got %v", got)
+	}
+}
+
 func TestMetricsByPathAndWindowAggregatesEachBucket(t *testing.T) {
 	metrics := MetricsByPathAndWindow(sampleRecords(), BucketSize(5*60*1000000000))
 	if len(metrics) != 2 {
