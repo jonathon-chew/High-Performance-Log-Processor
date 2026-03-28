@@ -38,14 +38,15 @@ func CLI(args []string) Flags {
 		default:
 			if _, err := os.Lstat(arg); err != nil {
 				fmt.Fprintf(os.Stderr, "[ERROR]: did not recognise the command: %s\n", arg)
+				// fmt.Fprint(os.Stderr, usageText)
 			}
 			returnFlags.FileName = arg
-		case "help":
+		case "help", "--help", "-h", "--useage", "-u":
 			fmt.Fprint(os.Stdout, usageText)
-			return Flags{}
+			os.Exit(0)
 		case "version":
 			fmt.Fprintf(os.Stdout, "High-Performance-Log-Processor %s\n", version)
-			return Flags{}
+			os.Exit(0)
 		case "output", "--output", "-o", "-output":
 			if index+1 < len(args) {
 				if args[index+1] == "JSON" || args[index+1] == "json" || args[index+1] == "Json" || args[index+1] == "JSon" || args[index+1] == "JSOn" {
@@ -75,29 +76,29 @@ func CLI(args []string) Flags {
 				}
 				returnFlags.Bucket = bucket
 			}
-		case "MetricsByPath":
+		case "MetricsByPath", "--MetricsByPath", "-MetricsByPath", "MBP", "-MBP", "--MBP":
 			returnFlags.MetricsByPath = true
-		case "LatencyByPath":
+		case "LatencyByPath", "--LatencyByPath", "-LatencyByPath", "LBP", "-LBP", "--LBP":
 			returnFlags.LatencyByPath = true
-		case "SlowRequestsByPath":
+		case "SlowRequestsByPath", "--SlowRequestsByPath", "-SlowRequestsByPath", "SBP", "-SBP", "--SBP":
 			returnFlags.SlowRequestsByPath = true
-		case "ErrorRateByPath":
+		case "ErrorRateByPath", "--ErrorRateByPath", "-ErrorRateByPath", "EBP", "-EBP", "--EBP":
 			returnFlags.ErrorRateByPath = true
-		case "RequestsByWindow":
+		case "RequestsByWindow", "--RequestsByWindow", "-RequestsByWindow", "RBW", "-RBW", "--RBW":
 			returnFlags.RequestsByWindow = true
-		case "LevelsByWindow":
+		case "LevelsByWindow", "--LevelsByWindow", "-LevelsByWindow", "LBW", "-LBW", "--LBW":
 			returnFlags.LevelsByWindow = true
-		case "WarnAndErrorCountsByWindow":
+		case "WarnAndErrorCountsByWindow", "--WarnAndErrorCountsByWindow", "-WarnAndErrorCountsByWindow", "WBW", "-WBW", "--WBW":
 			returnFlags.WarnAndErrorCountsByWindow = true
-		case "StatusClassesByWindow":
+		case "StatusClassesByWindow", "--StatusClassesByWindow", "-StatusClassesByWindow", "SClBW", "--SClBW", "-SClBW":
 			returnFlags.StatusClassesByWindow = true
-		case "StatusCodesByWindow":
+		case "StatusCodesByWindow", "--StatusCodesByWindow", "-StatusCodesByWindow", "SCoBW", "-SCoBW", "--SCoBW":
 			returnFlags.StatusCodesByWindow = true
-		case "MetricsByPathAndWindow":
+		case "MetricsByPathAndWindow", "--MetricsByPathAndWindow", "-MetricsByPathAndWindow", "MBPAW", "--MBPAW", "-MBPAW":
 			returnFlags.MetricsByPathAndWindow = true
-		case "SlowRequestsByWindow":
+		case "SlowRequestsByWindow", "--SlowRequestsByWindow", "-SlowRequestsByWindow", "SBW", "-SBW", "--SBW":
 			returnFlags.SlowRequestsByWindow = true
-		case "ErrorRateByWindow":
+		case "ErrorRateByWindow", "--ErrorRateByWindow", "-ErrorRateByWindow", "EBW", "-EBW", "--EBW":
 			returnFlags.ErrorRateByWindow = true
 		}
 	}

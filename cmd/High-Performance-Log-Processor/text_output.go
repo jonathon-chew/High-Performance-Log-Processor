@@ -11,9 +11,10 @@ const pathColumnWidth = 24
 
 func printTextOutput(record any) {
 	switch value := record.(type) {
+	// CLI: MetricsByPath, ErrorRateByPath
 	case dashboard.PathMetrics:
 		fmt.Printf(
-			"%-24s req=%6d info=%4d warn=%4d err=%4d 2xx=%4d 4xx=%4d 5xx=%4d avg_ms=%4d max_ms=%4d\n",
+			"%-24s req=%-6d info=%-4d warn=%-4d err=%-4d 2xx=%-4d 4xx=%-4d 5xx=%-4d avg_ms=%-4d max_ms=%-4d\n",
 			value.Path,
 			value.RequestCount,
 			value.LevelCounts.InfoCount,
@@ -25,18 +26,22 @@ func printTextOutput(record any) {
 			value.Latency.AverageMS,
 			value.Latency.MaxMS,
 		)
+	// CLI: LatencyByPath, SlowRequestsByPath
 	case dashboard.PathLatencyMetrics:
 		fmt.Printf(
-			"%-24s avg_ms=%4d max_ms=%4d over_100=%4d over_250=%4d over_500=%4d\n",
+			"%-24s count=%-2d avg_ms=%-4d max_ms=%-4d over_100=%-4d over_250=%-4d over_500=%-4d\n",
 			value.Path,
+			value.Latency.Count,
 			value.Latency.AverageMS,
 			value.Latency.MaxMS,
 			value.Latency.SlowOver100MS,
 			value.Latency.SlowOver250MS,
 			value.Latency.SlowOver500MS,
 		)
+	// CLI: RequestsByWindow, SlowRequestsByWindow
 	case dashboard.RequestVolumePoint:
 		fmt.Printf("%-43s requests=%6d\n", formatWindow(value.Window), value.RequestCount)
+	// CLI: LevelsByWindow, WarnAndErrorCountsByWindow
 	case dashboard.LevelVolumePoint:
 		fmt.Printf(
 			"%-43s info=%4d warn=%4d err=%4d\n",
@@ -45,6 +50,7 @@ func printTextOutput(record any) {
 			value.Counts.WarnCount,
 			value.Counts.ErrorCount,
 		)
+	// CLI: StatusClassesByWindow, ErrorRateByWindow
 	case dashboard.StatusClassVolumePoint:
 		fmt.Printf(
 			"%-43s 1xx=%4d 2xx=%4d 3xx=%4d 4xx=%4d 5xx=%4d\n",
@@ -55,8 +61,10 @@ func printTextOutput(record any) {
 			value.Counts.Status4xx,
 			value.Counts.Status5xx,
 		)
+	// CLI: StatusCodesByWindow
 	case dashboard.StatusCodeVolumePoint:
 		fmt.Printf("%-43s %s\n", formatWindow(value.Window), formatStatusCodeCounts(value.Counts))
+	// CLI: MetricsByPathAndWindow
 	case dashboard.PathWindowMetrics:
 		fmt.Printf(
 			"%-43s paths=%4d requests=%6d\n",
@@ -92,4 +100,3 @@ func totalRequests(paths []dashboard.PathMetrics) int {
 	}
 	return total
 }
-
