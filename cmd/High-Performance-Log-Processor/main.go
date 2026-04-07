@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	"High-Performance-Log-Processor/internal/cli"
-	"High-Performance-Log-Processor/internal/dashboard"
-	"High-Performance-Log-Processor/internal/parseinput"
+	"github.com/jonathon-chew/High-Performance-Log-Processor/internal/cli"
+	"github.com/jonathon-chew/High-Performance-Log-Processor/internal/dashboard"
+	"github.com/jonathon-chew/High-Performance-Log-Processor/internal/parseinput"
 )
 
 // ts=2026-03-14T09:01:20.006Z level=INFO req_id=0f4c9f3d method=GET path=/health status=200 duration_ms=1 bytes=2 ip=10.0.0.5 ua="kube-probe/1.31" msg="request complete"

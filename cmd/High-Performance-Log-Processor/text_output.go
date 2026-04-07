@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"High-Performance-Log-Processor/internal/dashboard"
+	"github.com/jonathon-chew/High-Performance-Log-Processor/internal/dashboard"
 )
 
 const pathColumnWidth = 24

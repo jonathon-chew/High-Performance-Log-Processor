@@ -1,9 +1,10 @@
 package parseinput
 
 import (
-	"High-Performance-Log-Processor/internal/cli"
 	"testing"
 	"time"
+
+	"github.com/jonathon-chew/High-Performance-Log-Processor/internal/cli"
 )
 
 func TestBuildLogRecordKeepsKnownFieldsWhenMalformedTokensExist(t *testing.T) {
@@ -79,4 +80,3 @@ func TestBuildLogRecordPreservesValidTimestampAlongsideMalformedFields(t *testin
 		t.Fatalf("expected path /api/orders, got %q", record.Path)
 	}
 }
-

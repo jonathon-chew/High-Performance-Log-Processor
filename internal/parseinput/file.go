@@ -1,11 +1,12 @@
 package parseinput
 
 import (
-	"High-Performance-Log-Processor/internal/cli"
-	"High-Performance-Log-Processor/internal/dashboard"
 	"bufio"
 	"log"
 	"os"
+
+	"github.com/jonathon-chew/High-Performance-Log-Processor/internal/cli"
+	"github.com/jonathon-chew/High-Performance-Log-Processor/internal/dashboard"
 )
 
 func ParseFile(flags cli.Flags) []dashboard.LogRecord {

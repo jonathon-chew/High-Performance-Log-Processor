@@ -1,8 +1,6 @@
 package parseinput
 
 import (
-	"High-Performance-Log-Processor/internal/cli"
-	"High-Performance-Log-Processor/internal/dashboard"
 	"bufio"
 	"encoding/json"
 	"fmt"
@@ -10,6 +8,9 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/jonathon-chew/High-Performance-Log-Processor/internal/cli"
+	"github.com/jonathon-chew/High-Performance-Log-Processor/internal/dashboard"
 )
 
 func ParsePing(Flags cli.Flags) {
@@ -29,8 +30,16 @@ func ParsePing(Flags cli.Flags) {
 		parts := strings.Split(line, " ")
 		var path string
 
-		if path = GetValue("ttl", parts); path == "" {
+		/* if path = GetValue("ttl", parts); path == "" {
 			path = "Error Path"
+		} */
+
+		// ping now uses IP as path in the instance of ping'ing multiple devices
+		for _, part := range parts {
+			if strings.Contains(part, ":") {
+				path = part[:len(part)-1]
+				break
+			}
 		}
 
 		// 64 bytes from 8.8.8.8: icmp_seq=1968 ttl=117 time=64.275 ms

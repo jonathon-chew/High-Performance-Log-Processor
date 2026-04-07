@@ -1,8 +1,9 @@
 package main
 
 import (
-	"High-Performance-Log-Processor/internal/parseinput"
 	"testing"
+
+	"github.com/jonathon-chew/High-Performance-Log-Processor/internal/parseinput"
 )
 
 func TestStringToInt(t *testing.T) {

@@ -1,11 +1,12 @@
 package parseinput
 
 import (
-	"High-Performance-Log-Processor/internal/dashboard"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/jonathon-chew/High-Performance-Log-Processor/internal/dashboard"
 )
 
 var Logs []dashboard.LogRecord
